@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import User, UserTypeChoices
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
-
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class OwnerSignUpSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -24,7 +24,7 @@ class OwnerSignUpSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirmation']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
-
+        
         return attrs
 
     def create(self, validated_data):
@@ -36,8 +36,16 @@ class OwnerSignUpSerializer(serializers.ModelSerializer):
             user_type= UserTypeChoices.OWNER,
         )
 
-        
         user.set_password(validated_data['password'])
         user.save()
 
         return user
+
+
+class UserLoginSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super(UserLoginSerializer, cls).get_token(user)
+
+        token['username'] = user.username
+        return token
